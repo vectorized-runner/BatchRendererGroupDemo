@@ -10,7 +10,8 @@ namespace BRGDemo
 	{
 		public Mesh Mesh;
 		public Material Material;
-
+		public int SpawnCount = 100_000;
+		
 		private BatchRendererGroup _brg;
 		private BatchMeshID _meshID;
 		private BatchMaterialID _materialID;
@@ -31,7 +32,8 @@ namespace BRGDemo
 			_meshID = _brg.RegisterMesh(Mesh);
 			_materialID = _brg.RegisterMaterial(Material);
 			_graphicsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Raw,
-				BufferCountForInstances(kBytesPerInstance, kNumInstances, kExtraBytes), intSizeInBytes);
+				BufferCountForInstances(kBytesPerInstance, (int)SpawnCount, kExtraBytes), intSizeInBytes);
+			
 		}
 
 		// Raw buffers are allocated in ints. This is a utility method that calculates
@@ -99,8 +101,8 @@ namespace BRGDemo
 			// at address 96 instead of 64, because the computeBufferStartIndex parameter of SetData
 			// is expressed as source array elements, so it is easier to work in multiples of sizeof(PackedMatrix).
 			uint byteAddressObjectToWorld = kSizeOfPackedMatrix * 2;
-			uint byteAddressWorldToObject = byteAddressObjectToWorld + kSizeOfPackedMatrix * kNumInstances;
-			uint byteAddressColor = byteAddressWorldToObject + kSizeOfPackedMatrix * kNumInstances;
+			uint byteAddressWorldToObject = byteAddressObjectToWorld + kSizeOfPackedMatrix * (uint)SpawnCount;
+			uint byteAddressColor = byteAddressWorldToObject + kSizeOfPackedMatrix * (uint)SpawnCount;
 
 			// Upload the instance data to the GraphicsBuffer so the shader can load them.
 			_graphicsBuffer.SetData(zero, 0, 0, 1);
@@ -158,12 +160,12 @@ namespace BRGDemo
 			drawCommands->drawRanges = (BatchDrawRange*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<BatchDrawRange>(),
 				alignment, Allocator.TempJob);
 			drawCommands->visibleInstances =
-				(int*)UnsafeUtility.Malloc(SpawnCount * sizeof(int), alignment, Allocator.TempJob);
+				(int*)UnsafeUtility.Malloc(SpawnCount * intSizeInBytes, alignment, Allocator.TempJob);
 			drawCommands->drawCommandPickingInstanceIDs = null;
 
 			drawCommands->drawCommandCount = 1;
 			drawCommands->drawRangeCount = 1;
-			drawCommands->visibleInstanceCount = (int)SpawnCount;
+			drawCommands->visibleInstanceCount = SpawnCount;
 
 			// This example doens't use depth sorting, so it leaves instanceSortingPositions as null.
 			drawCommands->instanceSortingPositions = null;
@@ -173,7 +175,7 @@ namespace BRGDemo
 			// starting from offset 0 in the array, using the batch, material and mesh
 			// IDs registered in the Start() method. It doesn't set any special flags.
 			drawCommands->drawCommands[0].visibleOffset = 0;
-			drawCommands->drawCommands[0].visibleCount = SpawnCount;
+			drawCommands->drawCommands[0].visibleCount = (uint)SpawnCount;
 			drawCommands->drawCommands[0].batchID = m_BatchID;
 			drawCommands->drawCommands[0].materialID = _materialID;
 			drawCommands->drawCommands[0].meshID = _meshID;
