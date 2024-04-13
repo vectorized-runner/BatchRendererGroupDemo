@@ -26,7 +26,6 @@ namespace BRGDemo
 		private const int kSizeOfFloat4 = sizeof(float) * 4;
 		private const int kBytesPerInstance = (kSizeOfPackedMatrix * 2) + kSizeOfFloat4;
 		private const int kExtraBytes = kSizeOfMatrix * 2;
-		private const int kNumInstances = 3;
 		private const int intSizeInBytes = 4;
 		private BatchID m_BatchID;
 
@@ -38,6 +37,7 @@ namespace BRGDemo
 			_graphicsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Raw,
 				BufferCountForInstances(kBytesPerInstance, (int)SpawnCount, kExtraBytes), intSizeInBytes);
 			
+			PopulateInstanceDataBuffer();
 		}
 
 		// Raw buffers are allocated in ints. This is a utility method that calculates
@@ -64,32 +64,18 @@ namespace BRGDemo
 			var zero = new float4x4[] { new float4x4() };
 
 			var matrices = new NativeArray<float4x4>(SpawnCount, Allocator.Temp);
-			for (int i = 0; i < SpawnCount; i++)
-			{
-				matrices[i] = float4x4.TRS(random.NextFloat3() * SpawnRadius, quaternion.identity, new float3(1, 1, 1));
-			}
-
 			var objectToWorld = new NativeArray<PackedMatrix>(SpawnCount, Allocator.Temp);
+			var worldToObject = new NativeArray<PackedMatrix>(SpawnCount, Allocator.Temp);
+			var colors = new NativeArray<float4>(SpawnCount, Allocator.Temp);
+			
 			for (int i = 0; i < SpawnCount; i++)
 			{
-				objectToWorld[i] = new PackedMatrix(matrices[i]);
+				var matrix = float4x4.TRS(random.NextFloat3Direction() * random.NextFloat() * SpawnRadius, quaternion.identity, new float3(1, 1, 1));
+				matrices[i] = matrix;
+				objectToWorld[i] = new PackedMatrix(matrix);
+				worldToObject[i] = new PackedMatrix(math.inverse(matrix));
+				colors[i] = new float4(random.NextFloat3(), 1.0f);
 			}
-
-			// Also create packed inverse matrices.
-			var worldToObject = new PackedMatrix[kNumInstances]
-			{
-				new PackedMatrix(matrices[0].inverse),
-				new PackedMatrix(matrices[1].inverse),
-				new PackedMatrix(matrices[2].inverse),
-			};
-
-			// Make all instances have unique colors.
-			var colors = new Vector4[kNumInstances]
-			{
-				new Vector4(1, 0, 0, 1),
-				new Vector4(0, 1, 0, 1),
-				new Vector4(0, 0, 1, 1),
-			};
 
 			// In this simple example, the instance data is placed into the buffer like this:
 			// Offset | Description

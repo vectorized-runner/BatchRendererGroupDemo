@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace BRGDemo
 {
+	/// <summary>
+	/// BRG uses 48-byte packed matrix for increased GPU Bandwidth
+	/// </summary>
 	public struct PackedMatrix
 	{
 		public float c0x;
