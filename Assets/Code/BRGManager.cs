@@ -1,4 +1,5 @@
 using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -185,17 +186,48 @@ namespace BRGDemo
 			// Finally, write the actual visible instance indices to the array. In a more complicated
 			// implementation, this output would depend on what is visible, but this example
 			// assumes that everything is visible.
-			for (int i = 0; i < SpawnCount; ++i)
-				drawCommands->visibleInstances[i] = i;
+			// for (int i = 0; i < SpawnCount; ++i)
+			// {
+			// 	drawCommands->visibleInstances[i] = i;
+			// }
 
-			
-			Debug.Log("Drawing!");
-			
 			// This simple example doesn't use jobs, so it returns an empty JobHandle.
 			// Performance-sensitive applications are encouraged to use Burst jobs to implement
 			// culling and draw command output. In this case, this function returns a
 			// handle here that completes when the Burst jobs finish.
-			return new JobHandle();
+			
+			return new CullJob
+			{
+				OutPtr = drawCommands,
+				InstanceCount = SpawnCount,
+			}.Schedule();
+		}
+
+		[BurstCompile]
+		public struct CullJob : IJob
+		{
+			[NoAlias]
+			[NativeDisableUnsafePtrRestriction]
+			public BatchCullingOutputDrawCommands* OutPtr;
+
+			public int InstanceCount;
+			
+			public void Execute()
+			{
+				var visibleIndex = 0;
+				
+				for (int i = 0; i < InstanceCount; i++)
+				{
+					// Render 1/1000
+					if (i % 1000 == 0)
+					{
+						OutPtr->visibleInstances[visibleIndex++] = i;
+					}
+				}
+
+				OutPtr->visibleInstanceCount = visibleIndex;
+				OutPtr->drawCommands[0].visibleCount = (uint)visibleIndex;
+			}
 		}
 	}
 }

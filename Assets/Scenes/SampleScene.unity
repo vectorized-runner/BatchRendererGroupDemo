@@ -458,6 +458,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   Material: {fileID: 2100000, guid: a6dd6916ec47d40b9b88aedb687f7397, type: 2}
+  SpawnCount: 1000000
+  SpawnRadius: 1000
 --- !u!4 &1024260881
 Transform:
   m_ObjectHideFlags: 0
