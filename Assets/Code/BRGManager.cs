@@ -1,16 +1,20 @@
 using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Random = Unity.Mathematics.Random;
 
 namespace BRGDemo
 {
-	public class BRGManager : MonoBehaviour
+	public unsafe class BRGManager : MonoBehaviour
 	{
 		public Mesh Mesh;
 		public Material Material;
 		public int SpawnCount = 100_000;
+		public float SpawnRadius = 1_000.0f;
 		
 		private BatchRendererGroup _brg;
 		private BatchMeshID _meshID;
@@ -54,16 +58,17 @@ namespace BRGDemo
 
 		private void PopulateInstanceDataBuffer()
 		{
+			var random = new Random(1);
+			
 			// Place a zero matrix at the start of the instance data buffer, so loads from address 0 return zero.
 			var zero = new Matrix4x4[1] { Matrix4x4.zero };
 
 			// Create transform matrices for three example instances.
-			var matrices = new Matrix4x4[kNumInstances]
+			var matrices = new NativeArray<float4x4>(SpawnCount, Allocator.Temp);
+			for (int i = 0; i < SpawnCount; i++)
 			{
-				Matrix4x4.Translate(new Vector3(-2, 0, 0)),
-				Matrix4x4.Translate(new Vector3(0, 0, 0)),
-				Matrix4x4.Translate(new Vector3(2, 0, 0)),
-			};
+				matrices[i] = float4x4.TRS(random.NextFloat3() * SpawnRadius, quaternion.identity, new float3(1, 1, 1));
+			}
 
 			// Convert the transform matrices into the packed format that the shader expects.
 			var objectToWorld = new PackedMatrix[kNumInstances]
