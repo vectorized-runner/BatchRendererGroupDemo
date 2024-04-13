@@ -61,22 +61,19 @@ namespace BRGDemo
 			var random = new Random(1);
 			
 			// Place a zero matrix at the start of the instance data buffer, so loads from address 0 return zero.
-			var zero = new Matrix4x4[1] { Matrix4x4.zero };
+			var zero = new float4x4[] { new float4x4() };
 
-			// Create transform matrices for three example instances.
 			var matrices = new NativeArray<float4x4>(SpawnCount, Allocator.Temp);
 			for (int i = 0; i < SpawnCount; i++)
 			{
 				matrices[i] = float4x4.TRS(random.NextFloat3() * SpawnRadius, quaternion.identity, new float3(1, 1, 1));
 			}
 
-			// Convert the transform matrices into the packed format that the shader expects.
-			var objectToWorld = new PackedMatrix[kNumInstances]
+			var objectToWorld = new NativeArray<PackedMatrix>(SpawnCount, Allocator.Temp);
+			for (int i = 0; i < SpawnCount; i++)
 			{
-				new PackedMatrix(matrices[0]),
-				new PackedMatrix(matrices[1]),
-				new PackedMatrix(matrices[2]),
-			};
+				objectToWorld[i] = new PackedMatrix(matrices[i]);
+			}
 
 			// Also create packed inverse matrices.
 			var worldToObject = new PackedMatrix[kNumInstances]
